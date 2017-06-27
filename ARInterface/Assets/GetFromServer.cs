@@ -165,7 +165,7 @@ public class GetFromServer : MonoBehaviour {
 
         // Encode the data string into a byte array.  
         //byte[] msg = Encoding.ASCII.GetBytes("Connected from Unity Server.");
-        crpiClient.connect();
+        //crpiClient.connect();
     }
 
     void TaskOnClick()
