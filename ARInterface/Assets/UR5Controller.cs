@@ -85,6 +85,8 @@ public class UR5Controller : MonoBehaviour {
         #else        
                 Debug.Log("Entered else");
         #endif*/
+
+
         for (int i = 0; i < 6; i++) {
             jointValues[i] = sliderList[i].value;
         }

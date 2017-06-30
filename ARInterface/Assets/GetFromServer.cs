@@ -14,6 +14,11 @@ using System.Text;
 public class GetFromServer : MonoBehaviour {
     private Button thisButton;
     public InputField MessageOutput;
+    public Dropdown CommandInput;
+
+
+    public GameObject CanvasObj;
+    private Slider[] sliderList = new Slider[6];
 
 
     // Class to store client info & methods
@@ -166,21 +171,95 @@ public class GetFromServer : MonoBehaviour {
         // Encode the data string into a byte array.  
         //byte[] msg = Encoding.ASCII.GetBytes("Connected from Unity Server.");
         //crpiClient.connect();
+
+
+        initializeSliders();
     }
 
     void TaskOnClick()
     {
         //Debug.Log("You have clicked the button!");
+        String cmd = CommandInput.captionText.text;
+        Debug.Log(cmd);
 
+        if (thisButton.name.Equals("GetPose")) 
+            cmd = "Get Pose";
 
         // Encode the data string into a byte array.  
-        byte[] msg = Encoding.ASCII.GetBytes("Get pose");
-        string pose = crpiClient.sendMsg(msg);
+        byte[] msg = Encoding.ASCII.GetBytes(cmd);
+        string ans = crpiClient.sendMsg(msg);
 
-        Debug.Log(String.Format("Click received pose: {0}", pose));
 
-        MessageOutput.text = String.Format("{0}", pose);
+        if (cmd.Equals("Get Pose"))
+        {
+            Debug.Log(String.Format("Robot Pose: {0}", ans));
+        }
+        else if (cmd.Equals("Get Forces"))
+        {
+            Debug.Log(String.Format("Robot Forces: {0}", ans));
+        }
+        
+        else if (cmd.Equals("Get Axes"))
+        {
+            Debug.LogFormat("Robot Axes: {0}", ans);
+            setSliders(ans);
+        }
 
+
+        MessageOutput.text = String.Format("{0}", ans);
+
+    }
+
+
+    // Set sliders to joint values rcvd from robot
+    void setSliders(string input)
+    {
+        input = input.Replace('(', ' ').Replace(')', ' ');
+        //Debug.Log(input);
+        Double[] axes = Array.ConvertAll(input.Split(','), Double.Parse);
+        //Debug.LogFormat("Converted Axes: {0}...", axes[0]);
+
+
+        for (int i = 0; i < 6; i++)
+        {
+            sliderList[i].value = (float)(axes[5-i]);
+        }
+    }
+
+
+
+    // Create the list of GameObjects that represent each slider in the canvas
+    void initializeSliders()
+    {
+        var CanvasChildren = CanvasObj.GetComponentsInChildren<Slider>();
+
+        for (int i = 0; i < CanvasChildren.Length; i++)
+        {
+            if (CanvasChildren[i].name == "Slider0")
+            {
+                sliderList[0] = CanvasChildren[i];
+            }
+            else if (CanvasChildren[i].name == "Slider1")
+            {
+                sliderList[1] = CanvasChildren[i];
+            }
+            else if (CanvasChildren[i].name == "Slider2")
+            {
+                sliderList[2] = CanvasChildren[i];
+            }
+            else if (CanvasChildren[i].name == "Slider3")
+            {
+                sliderList[3] = CanvasChildren[i];
+            }
+            else if (CanvasChildren[i].name == "Slider4")
+            {
+                sliderList[4] = CanvasChildren[i];
+            }
+            else if (CanvasChildren[i].name == "Slider5")
+            {
+                sliderList[5] = CanvasChildren[i];
+            }
+        }
     }
 
 
