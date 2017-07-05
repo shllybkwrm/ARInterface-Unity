@@ -79,17 +79,21 @@ public class GetFromServer : MonoBehaviour {
 
                 // Establish the remote endpoint for the socket.  
                 // The example uses port 11000 on the local computer.  
-                //IPHostEntry ipHostInfo = Dns.Resolve(Dns.GetHostName());
+                //! Obsolete:  IPHostEntry ipHostInfo = Dns.Resolve(Dns.GetHostName());
                 IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
                 Debug.Log(String.Format("Connecting from {0}",
                         ipHostInfo.ToString()));
                 IPAddress ipAddress = ipHostInfo.AddressList[0];
-                Debug.Log(String.Format("Connecting to {0}",
-                        ipAddress.ToString()));
-                IPEndPoint remoteEP = new IPEndPoint(ipAddress, 20602);
+                byte[] ipBytes = { 169, 254, 152, 39 };
+                IPAddress ipAddressRemote = new IPAddress(ipBytes);
 
-                path = ipAddress;
+                path = ipAddressRemote;
                 port = 20602;
+
+                Debug.Log(String.Format("Connecting to {0}",
+                        path.ToString()));
+                IPEndPoint remoteEP = new IPEndPoint(path, port);
+
 
                 // Create a TCP/IP  socket.  
                 sender = new Socket(AddressFamily.InterNetwork,
@@ -219,10 +223,39 @@ public class GetFromServer : MonoBehaviour {
         Double[] axes = Array.ConvertAll(input.Split(','), Double.Parse);
         //Debug.LogFormat("Converted Axes: {0}...", axes[0]);
 
-
+        double tempVal = 0.0;
         for (int i = 0; i < 6; i++)
         {
-            sliderList[i].value = (float)(axes[5-i]);
+            switch (i)
+            {
+                case 0:
+                    tempVal = axes[5 - i] + 180.0;
+                    break;
+                case 1:
+                    tempVal = axes[5 - i] - 90.0;
+                    break;
+                case 3:
+                    tempVal = axes[5 - i] + 90.0;
+                    break;
+                /*case 4:
+                    sliderList[i].value = (float)(axes[5 - i] + 90.0);
+                    break;*/
+                default:
+                    tempVal = axes[5 - i];
+                    break;
+            }
+
+            if (tempVal > 180.0)
+            {
+                tempVal = -180.0 + (tempVal - 180.0);
+            }
+            else if (tempVal < -180.0)
+            {
+
+                tempVal = 180.0 - (tempVal + 180.0);
+            }
+
+            sliderList[i].value = (float)tempVal;
         }
     }
 

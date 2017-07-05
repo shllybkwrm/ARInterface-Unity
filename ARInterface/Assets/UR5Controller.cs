@@ -50,9 +50,9 @@ public class UR5Controller : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-        TextControl.text = string.Format("({0:0.0},{1:0.0},{2:0.0},{3:0.0},{4:0.0},{5:0.0})",
-            jointValues[0], jointValues[1], jointValues[2],
-            jointValues[3], jointValues[4], jointValues[5]);
+        TextControl.text = string.Format("({0:0.0}, {1:0.0}, {2:0.0}, {3:0.0}, {4:0.0}, {5:0.0})",
+            jointValues[5], jointValues[4], jointValues[3],
+            jointValues[2], jointValues[1], jointValues[0]);
 
         // Needed //////////////////////////////////////////////////
         //controllerInput.Update();
