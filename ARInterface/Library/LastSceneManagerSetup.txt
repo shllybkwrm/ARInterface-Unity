@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/ARInterface_Android.unity
+- path: Assets/ARInterface_noNM.unity
   isLoaded: 1
   isActive: 1
