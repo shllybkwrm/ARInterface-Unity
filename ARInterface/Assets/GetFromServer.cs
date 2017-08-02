@@ -180,14 +180,46 @@ public class GetFromServer : MonoBehaviour {
         initializeSliders();
     }
 
+    float timeCounter = 0.0f;
+
+    void Update()
+    {
+
+        // Increment timer
+        timeCounter += Time.deltaTime;
+
+        if (crpiClient.isConnected && timeCounter>=10.0f)
+        {
+            Debug.LogFormat("Timer: {0}", timeCounter);
+
+
+            // Live update axes  
+            byte[] msg = Encoding.ASCII.GetBytes("Get Axes");
+            string ans = crpiClient.sendMsg(msg);
+            Debug.LogFormat("Robot Axes: {0}", ans);
+            setSliders(ans);
+
+
+            // Plot forces at every interval 
+            msg = Encoding.ASCII.GetBytes("Get Forces");
+            ans = crpiClient.sendMsg(msg);
+            Debug.LogFormat("Robot Forces: {0}", ans);
+            plotForces(ans);
+
+
+            timeCounter = 0.0f;
+        }
+
+    }
+
     void TaskOnClick()
     {
         //Debug.Log("You have clicked the button!");
         String cmd = CommandInput.captionText.text;
         Debug.Log(cmd);
 
-        if (thisButton.name.Equals("GetPose")) 
-            cmd = "Get Pose";
+        //if (thisButton.name.Equals("GetPose")) 
+        //    cmd = "Get Pose";
 
         // Encode the data string into a byte array.  
         byte[] msg = Encoding.ASCII.GetBytes(cmd);
@@ -226,25 +258,27 @@ public class GetFromServer : MonoBehaviour {
         double tempVal = 0.0;
         for (int i = 0; i < 6; i++)
         {
+            // Offsets
             switch (i)
             {
                 case 0:
-                    tempVal = axes[5 - i] + 180.0;
+                    tempVal = -1.0*(axes[i]+45.0);
                     break;
                 case 1:
-                    tempVal = axes[5 - i] - 90.0;
+                    tempVal = axes[i] + 90.0;
                     break;
                 case 3:
-                    tempVal = axes[5 - i] + 90.0;
+                    tempVal = axes[i] + 90.0;
                     break;
-                /*case 4:
-                    sliderList[i].value = (float)(axes[5 - i] + 90.0);
-                    break;*/
+                case 4:
+                    tempVal = -1.0*axes[i];
+                    break;
                 default:
-                    tempVal = axes[5 - i];
+                    tempVal = axes[i];
                     break;
             }
 
+            // Check if out of bounds and loop around
             if (tempVal > 180.0)
             {
                 tempVal = -180.0 + (tempVal - 180.0);
@@ -255,6 +289,7 @@ public class GetFromServer : MonoBehaviour {
                 tempVal = 180.0 - (tempVal + 180.0);
             }
 
+            // Set slider, which will set model
             sliderList[i].value = (float)tempVal;
         }
     }
@@ -292,6 +327,65 @@ public class GetFromServer : MonoBehaviour {
             {
                 sliderList[5] = CanvasChildren[i];
             }
+        }
+    }
+
+
+
+    // Set plot to updated force values
+    public ParticleSystem plot;
+
+    [Range(10, 100)]
+    public int resolution = 10;
+
+    private int currentResolution;
+    private ParticleSystem.Particle[] points;
+
+    private Double[] forceHistory = new Double[10];
+
+    void plotForces(string input)
+    {
+        input = input.Replace('(', ' ').Replace(')', ' ');
+        Double[] forces = Array.ConvertAll(input.Split(','), Double.Parse);
+
+
+        if (currentResolution != resolution || points == null)
+        {
+            CreatePoints();
+        }
+
+
+        Array.Copy(forceHistory, 1, forceHistory, 0, forceHistory.Length-1);
+        forceHistory[forceHistory.Length-1] = forces[0];
+        Debug.LogFormat("forceHistory: {0}", forceHistory);
+
+
+        for (int i = 0; i < resolution; i++)
+        {
+            Vector3 p = points[i].position;
+            p.y = (float)forceHistory[i];
+            points[i].position = p;
+            Color c = points[i].color;
+            c.g = p.y;
+            points[i].color = c;
+        }
+
+
+        plot.GetComponent<ParticleSystem>().SetParticles(points, points.Length);
+    }
+
+
+    private void CreatePoints()
+    {
+        currentResolution = resolution;
+        points = new ParticleSystem.Particle[resolution];
+        float increment = 1f / (resolution - 1);
+        for (int i = 0; i < resolution; i++)
+        {
+            float x = i * increment;
+            points[i].position = new Vector3(x, 0f, 0f);
+            points[i].color = new Color(x, 0f, 0f);
+            points[i].size = 0.1f;
         }
     }
 
