@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 
@@ -159,7 +157,7 @@ public class GetFromServer : MonoBehaviour {
     }
 
     // Create class to hold client details
-    public client crpiClient = new client();
+    private client crpiClient = new client();
 
 
     void Start()
@@ -180,6 +178,8 @@ public class GetFromServer : MonoBehaviour {
         initializeSliders();
     }
 
+    public Toggle liveUpdateToggle;
+    public Toggle plotForcesToggle;
     float timeCounter = 0.0f;
 
     void Update()
@@ -188,23 +188,28 @@ public class GetFromServer : MonoBehaviour {
         // Increment timer
         timeCounter += Time.deltaTime;
 
-        if (crpiClient.isConnected && timeCounter>=10.0f)
+        if (crpiClient.isConnected && timeCounter>=0.1f)
         {
-            Debug.LogFormat("Timer: {0}", timeCounter);
+            //Debug.LogFormat("Timer: {0}", timeCounter);
 
 
-            // Live update axes  
-            byte[] msg = Encoding.ASCII.GetBytes("Get Axes");
-            string ans = crpiClient.sendMsg(msg);
-            Debug.LogFormat("Robot Axes: {0}", ans);
-            setSliders(ans);
+            if (liveUpdateToggle.isOn)
+            {
+                // Live update axes  
+                byte[] msg = Encoding.ASCII.GetBytes("Get Axes");
+                string ans = crpiClient.sendMsg(msg);
+                Debug.LogFormat("Robot Axes: {0}", ans);
+                setSliders(ans);
+            }
 
-
-            // Plot forces at every interval 
-            msg = Encoding.ASCII.GetBytes("Get Forces");
-            ans = crpiClient.sendMsg(msg);
-            Debug.LogFormat("Robot Forces: {0}", ans);
-            plotForces(ans);
+            if (plotForcesToggle.isOn)
+            {
+                // Plot forces at every interval 
+                byte[] msg2 = Encoding.ASCII.GetBytes("Get Forces");
+                string ans2 = crpiClient.sendMsg(msg2);
+                Debug.LogFormat("Robot Forces: {0}", ans2);
+                plotForces(ans2);
+            }
 
 
             timeCounter = 0.0f;
@@ -216,10 +221,7 @@ public class GetFromServer : MonoBehaviour {
     {
         //Debug.Log("You have clicked the button!");
         String cmd = CommandInput.captionText.text;
-        Debug.Log(cmd);
-
-        //if (thisButton.name.Equals("GetPose")) 
-        //    cmd = "Get Pose";
+        Debug.LogFormat(cmd);
 
         // Encode the data string into a byte array.  
         byte[] msg = Encoding.ASCII.GetBytes(cmd);
@@ -228,22 +230,87 @@ public class GetFromServer : MonoBehaviour {
 
         if (cmd.Equals("Get Pose"))
         {
-            Debug.Log(String.Format("Robot Pose: {0}", ans));
+            Debug.LogFormat("Robot Pose: {0}", ans);
         }
         else if (cmd.Equals("Get Forces"))
         {
-            Debug.Log(String.Format("Robot Forces: {0}", ans));
+            Debug.LogFormat("Robot Forces: {0}", ans);
         }
-        
+
         else if (cmd.Equals("Get Axes"))
         {
             Debug.LogFormat("Robot Axes: {0}", ans);
             setSliders(ans);
         }
 
+        // -- NEW:  Send joint angles from robot --
+        else if (cmd.Equals("Send Pose"))
+        {
+            String axes = getSliders();
+            Debug.LogFormat("Axes from sliders: {0}", axes);
+
+            // Encode the data string into a byte array.  
+            msg = Encoding.ASCII.GetBytes(axes.ToString());
+            ans = crpiClient.sendMsg(msg);
+
+            Debug.LogFormat("Sent pose to robot.");
+
+                
+        }
 
         MessageOutput.text = String.Format("{0}", ans);
 
+
+    }
+
+
+    // Set sliders to joint values rcvd from robot
+    String getSliders()
+    {
+        String res = "(";
+        //Double[] axes = new Double[6];
+
+        float tempVal = 0.0f;
+        for (int i = 0; i < 6; i++)
+        {
+            // Offsets - ideally opposite of set
+            switch (i)
+            {
+                case 0:
+                    tempVal = -1.0f * (sliderList[i].value + 45.0f);
+                    break;
+                case 1:
+                    tempVal = sliderList[i].value - 90.0f;
+                    break;
+                case 3:
+                    tempVal = sliderList[i].value - 90.0f;
+                    break;
+                case 4:
+                    tempVal = -1.0f * sliderList[i].value;
+                    break;
+                default:
+                    tempVal = sliderList[i].value;
+                    break;
+            }
+
+            // Check if out of bounds and loop around
+            if (tempVal > 180.0f) 
+            {
+                tempVal = -180.0f + (tempVal - 180.0f);
+            }
+            else if (tempVal < -180.0f) 
+            {
+
+                tempVal = 180.0f + (tempVal + 180.0f);
+            }
+
+            // Save modified slider value
+            //axes[i] = (double)tempVal;
+            res += tempVal.ToString() + ",";
+        }
+        res += ")";
+
+        return res;
     }
 
 
@@ -262,7 +329,7 @@ public class GetFromServer : MonoBehaviour {
             switch (i)
             {
                 case 0:
-                    tempVal = -1.0*(axes[i]+45.0);
+                    tempVal = (-1.0 * axes[i]) - 45.0;
                     break;
                 case 1:
                     tempVal = axes[i] + 90.0;
@@ -271,7 +338,7 @@ public class GetFromServer : MonoBehaviour {
                     tempVal = axes[i] + 90.0;
                     break;
                 case 4:
-                    tempVal = -1.0*axes[i];
+                    tempVal = -1.0 * axes[i];
                     break;
                 default:
                     tempVal = axes[i];
@@ -279,14 +346,14 @@ public class GetFromServer : MonoBehaviour {
             }
 
             // Check if out of bounds and loop around
-            if (tempVal > 180.0)
+            if (tempVal > 180.0) 
             {
                 tempVal = -180.0 + (tempVal - 180.0);
             }
-            else if (tempVal < -180.0)
+            else if (tempVal < -180.0) 
             {
 
-                tempVal = 180.0 - (tempVal + 180.0);
+                tempVal = 180.0 + (tempVal + 180.0);
             }
 
             // Set slider, which will set model
@@ -329,7 +396,6 @@ public class GetFromServer : MonoBehaviour {
             }
         }
     }
-
 
 
     // Set plot to updated force values
